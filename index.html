@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash Video Analyzer | Pro Analytics</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-elements">
+        <div class="glow-orb orb-pink"></div>
+        <div class="glow-orb orb-cyan"></div>
+        <div class="court-lines"></div>
+        <div class="floating-shuttle">🏸</div>
+    </div>
+
+    <main class="app-container">
+        
+        <header class="app-header">
+            <h1 class="neon-text">SMASH <span class="cyan-text">ANALYZER</span></h1>
+            <p class="subtitle">Extract exact smash speeds directly from video</p>
+        </header>
+
+        <div class="dashboard-grid analyzer-layout">
+            <!-- Left Panel -->
+            <section class="glass-panel controls-section">
+                
+                <!-- Step 1: Record -->
+                <div class="step-card active" id="step-1">
+                    <h3><span class="step-badge">1</span> Record Smash</h3>
+                    <p class="step-desc">Open your camera and record the smash.</p>
+                    
+                    <div id="camera-controls">
+                        <button class="btn-outline action-btn" id="btn-start-camera">
+                            <i class="fa-solid fa-camera"></i> Start Camera
+                        </button>
+                        <div class="recording-controls hidden" id="recording-controls">
+                            <button class="btn-neon action-btn" id="btn-start-record">
+                                <i class="fa-solid fa-circle"></i> Record
+                            </button>
+                            <button class="btn-neon-alt action-btn hidden" id="btn-stop-record">
+                                <i class="fa-solid fa-square"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Mark Points -->
+                <div class="step-card disabled" id="step-2">
+                    <h3><span class="step-badge">2</span> Track Flight Time</h3>
+                    <p class="step-desc">Use the video controls to pinpoint the impact frame and the landing frame. Distance is hardcoded to a standard 6.7m half-court.</p>
+                    
+                    <div class="playback-controls" style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                        <button class="btn-outline btn-sm" id="btn-prev-frame"><i class="fa-solid fa-backward-step"></i> -1F</button>
+                        <button class="btn-outline btn-sm" id="btn-play-pause"><i class="fa-solid fa-play"></i> / <i class="fa-solid fa-pause"></i></button>
+                        <button class="btn-outline btn-sm" id="btn-next-frame">+1F <i class="fa-solid fa-forward-step"></i></button>
+                    </div>
+
+                    <div style="display:flex; gap: 10px; margin-bottom:10px;">
+                        <button class="btn-outline action-btn" id="btn-mark-p1">Mark Impact (1)</button>
+                        <button class="btn-outline action-btn disabled" id="btn-mark-p2">Mark Landing (2)</button>
+                    </div>
+
+                    <p id="status-p1" style="font-size: 0.85rem; color: var(--neon-cyan); margin-bottom:5px;"></p>
+                    <p id="status-p2" style="font-size: 0.85rem; color: var(--neon-pink); margin-bottom:15px;"></p>
+
+                    <button class="btn-neon action-btn w-100 disabled" id="btn-calculate" style="margin-top: 10px;">
+                        <i class="fa-solid fa-bolt"></i> CALCULATE SPEED
+                    </button>
+                </div>
+
+            </section>
+
+            <!-- Right Panel -->
+            <section class="glass-panel video-section">
+                <div class="video-container-wrapper" id="video-container-wrapper">
+                    <div class="empty-video-state" id="empty-video-state">
+                        <i class="fa-solid fa-file-video"></i>
+                        <p>Upload a video to begin</p>
+                    </div>
+                    
+                    <video id="analyzer-video" playsinline muted controls class="hidden"></video>
+                    <canvas id="analyzer-canvas" class="hidden"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <!-- Results Modal -->
+        <div class="results-modal hidden" id="results-modal">
+            <div class="glass-panel modal-content">
+                <button class="close-btn" id="close-modal"><i class="fa-solid fa-xmark"></i></button>
+                <h2><i class="fa-solid fa-gauge-high"></i> Analysis Result</h2>
+                
+                <div class="speedometer-container">
+                    <div class="svg-gauge">
+                        <svg viewBox="0 0 200 100" class="gauge-svg">
+                            <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" />
+                            <path class="gauge-value" id="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" />
+                        </svg>
+                        <div class="gauge-text">
+                            <div class="speed-value" id="speed-display">0</div>
+                            <div class="speed-unit">km/h</div>
+                        </div>
+                    </div>
+                    <div class="speed-classification" id="speed-category">Evaluating...</div>
+                </div>
+
+                <div class="stats-breakdown">
+                    <div class="stat-item">
+                        <span class="stat-label">Hardcoded Dist.</span>
+                        <span class="stat-val" id="stat-dist">6.7 m</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Flight Time</span>
+                        <span class="stat-val" id="stat-time">-- s</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Pro Benchmark</span>
+                        <span class="stat-val" id="stat-benchmark">--%</span>
+                    </div>
+                </div>
+
+                <button class="btn-outline action-btn w-100 mt-2" id="btn-save-result">
+                    <i class="fa-solid fa-bookmark"></i> SAVE TO HISTORY
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/physics.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/video-analyzer.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

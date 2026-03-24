@@ -1,0 +1,40 @@
+# Node
+node_modules/
+npm-debug.log
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+backend/venv/
+backend/__pycache__/
+api/__pycache__/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Media & Temp
+uploads/
+backend/uploads/
+tmp/
+*.mp4
+*.mov
+*.avi
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.gemini/
+brain/
+*.log
