@@ -138,10 +138,12 @@ class VideoAnalyzer:
         }
 
 @app.get("/api/health")
+@app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "mode": "onnx"}
 
 @app.post("/api/analyze")
+@app.post("/analyze")
 async def analyze_video(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
@@ -150,3 +152,7 @@ async def analyze_video(file: UploadFile = File(...)):
     analyzer = VideoAnalyzer(file_path)
     result = analyzer.analyze()
     return {"filename": file.filename, **result}
+
+@app.api_route("/{path_name:path}", methods=["GET", "POST"])
+async def catch_all(path_name: str):
+    return {"error": "Not Found", "requested_path": path_name, "info": "Check your vercel.json rewrites and FastAPI route prefixes."}
