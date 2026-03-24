@@ -146,7 +146,15 @@ def health():
 @app.post("/api/analyze")
 @app.post("/analyze")
 @app.post("/")
-async def analyze_video(file: UploadFile = File(...)):
+async def analyze_video(request: Request, file: UploadFile = File(None)):
+    if file is None:
+        return {
+            "error": "No file received", 
+            "method": request.method, 
+            "url": str(request.url),
+            "headers": dict(request.headers),
+            "info": "The POST route was reached but the 'file' field was missing."
+        }
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
