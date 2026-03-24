@@ -1,0 +1,24 @@
+# Vercel Ignore File
+# Exclude local environments
+.venv/
+venv/
+node_modules/
+frontend/node_modules/
+
+# Exclude legacy backend and other junk
+backend/
+api/yolov8n.pt
+*.mp4
+*.mov
+*.avi
+uploads/
+api/uploads/
+__pycache__/
+*.pyc
+
+# IDE folders
+.vscode/
+.idea/
+.git/
+.gemini/
+brain/
