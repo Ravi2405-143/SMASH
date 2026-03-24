@@ -139,11 +139,13 @@ class VideoAnalyzer:
 
 @app.get("/api/health")
 @app.get("/health")
+@app.get("/")
 def health():
-    return {"status": "ok", "mode": "onnx"}
+    return {"status": "ok", "mode": "onnx", "info": "Root GET mapping active"}
 
 @app.post("/api/analyze")
 @app.post("/analyze")
+@app.post("/")
 async def analyze_video(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
