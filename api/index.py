@@ -5,7 +5,7 @@ import numpy as np
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List
-from ultralytics import YOLO
+import onnxruntime as ort
 
 # Use absolute import logic or relative based on how Vercel runs it
 try:
@@ -27,11 +27,10 @@ app.add_middleware(
 UPLOAD_DIR = "/tmp/uploads" # Use /tmp for Vercel functions
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Load YOLOv8 model
-# Vercel will look in the api/ directory or root.
-# We'll put it in api/ for clarity.
-model_path = os.path.join(os.path.dirname(__file__), "yolov8n.pt")
-model = YOLO(model_path)
+# Load ONNX model
+model_path = os.path.join(os.path.dirname(__file__), "yolov8n.onnx")
+session = ort.InferenceSession(model_path)
+input_name = session.get_inputs()[0].name
 
 class VideoAnalyzer:
     def __init__(self, file_path: str):
@@ -64,26 +63,40 @@ class VideoAnalyzer:
                 break
             
             # Optimization for Vercel: Skip frames to fit 10s limit
-            # Only process every 2nd frame
-            if frame_idx % 2 != 0:
+            # Only process every 4th frame for faster serverless response
+            if frame_idx % 4 != 0:
                 frame_idx += 1
                 continue
 
-            results = model.predict(frame, classes=[32], conf=0.15, verbose=False)
+            # Standard Pre-processing for YOLOv8 ONNX
+            img = cv2.resize(frame, (640, 640))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img = img.transpose(2, 0, 1) 
+            img = np.expand_dims(img, axis=0).astype(np.float32) / 255.0
+
+            # ONNX Inference
+            outputs = session.run(None, {input_name: img})
+            preds = outputs[0][0] # [84, 8400]
+            
+            # class 32 is 'sports ball'. index 4 + 32 = 36
+            confs = preds[36, :]
+            best_idx = np.argmax(confs)
             
             best_detection = None
-            for r in results:
-                if len(r.boxes) > 0:
-                    best_detection = r.boxes[0]
-                    break
-            
-            if best_detection:
-                x, y, w, h = best_detection.xywh[0].tolist()
-                current_pos = self.tracker.update(x, y)
+            if confs[best_idx] > 0.2:
+                # Get coords (normalized to 640x640)
+                cx, cy, _, _ = preds[:4, best_idx]
+                
+                # Rescale to original resolution
+                orig_x = (cx / 640.0) * self.width
+                orig_y = (cy / 640.0) * self.height
+                
+                current_pos = self.tracker.update(orig_x, orig_y)
                 if prev_pos:
                     dx = (current_pos[0] - prev_pos[0]) * m_per_px
                     dy = (current_pos[1] - prev_pos[1]) * m_per_px
-                    instant_vel = np.sqrt(dx**2 + dy**2) * (self.fps / 2) # Adj for frame skip
+                    # Adj for frame skip (fps / skip_factor)
+                    instant_vel = np.sqrt(dx**2 + dy**2) * (self.fps / 4)
                     kmh = instant_vel * 3.6
                     angle = np.degrees(np.arctan2(-dy, dx))
                     
@@ -99,8 +112,8 @@ class VideoAnalyzer:
                 self.tracker.predict()
             
             frame_idx += 1
-            # Hard limit for Vercel execution time (process max 100 frames)
-            if frame_idx > 100:
+            # Hard limit for Vercel execution time (process max 60 frames)
+            if frame_idx > 60:
                 break
 
         self.cap.release()
@@ -113,7 +126,7 @@ class VideoAnalyzer:
                 "fps": round(self.fps, 2),
                 "resolution": f"{self.width}x{self.height}",
                 "processed_frames": frame_idx,
-                "note": "Optimized for serverless: every 2nd frame processed."
+                "note": "Ultra-optimized for serverless: every 4th frame processed with ONNX Runtime."
             },
             "results": {
                 "peak_velocity": round(max_velocity, 1),
