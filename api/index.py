@@ -2,7 +2,7 @@ import os
 import shutil
 import cv2
 import numpy as np
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List
 import onnxruntime as ort
@@ -155,6 +155,12 @@ async def analyze_video(file: UploadFile = File(...)):
     result = analyzer.analyze()
     return {"filename": file.filename, **result}
 
-@app.api_route("/{path_name:path}", methods=["GET", "POST"])
-async def catch_all(path_name: str):
-    return {"error": "Not Found", "requested_path": path_name, "info": "Check your vercel.json rewrites and FastAPI route prefixes."}
+@app.api_route("/{path_name:path}", methods=["GET", "POST", "OPTIONS"])
+async def catch_all(request: Request, path_name: str):
+    return {
+        "error": "Not Found",
+        "requested_path": path_name,
+        "method": request.method,
+        "url": str(request.url),
+        "info": "The request reached the backend but didn't match any specific route. Check if you're using /api/ prefix or not."
+    }
