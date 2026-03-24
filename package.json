@@ -2,6 +2,8 @@
   "name": "smash-speed-v1",
   "version": "1.0.0",
   "scripts": {
+    "dev:backend": "python run_dev.py",
+    "dev:frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm install && npm run build",
     "install": "cd frontend && npm install"
   }
