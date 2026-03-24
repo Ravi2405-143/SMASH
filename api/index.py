@@ -112,8 +112,8 @@ class VideoAnalyzer:
                 self.tracker.predict()
             
             frame_idx += 1
-            # Hard limit for Vercel execution time (process max 60 frames)
-            if frame_idx > 60:
+            # Hard limit for Vercel execution time (process max 180 frames)
+            if frame_idx > 180:
                 break
 
         self.cap.release()
@@ -141,21 +141,15 @@ class VideoAnalyzer:
 @app.get("/health")
 @app.get("/")
 def health():
-    return {"status": "ok", "mode": "onnx", "info": "Root GET mapping active"}
+    return {"status": "ok", "mode": "onnx"}
 
 @app.post("/api/analyze")
 @app.post("/analyze")
 @app.post("/")
-async def analyze_video(request: Request, file: UploadFile = File(None)):
-    if file is None:
-        return {
-            "error": "No file received", 
-            "method": request.method, 
-            "url": str(request.url),
-            "headers": dict(request.headers),
-            "info": "The POST route was reached but the 'file' field was missing."
-        }
+async def analyze_video(request: Request, file: UploadFile = File(...)):
+    # Create absolute path for Vercel
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+    
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
@@ -163,12 +157,4 @@ async def analyze_video(request: Request, file: UploadFile = File(None)):
     result = analyzer.analyze()
     return {"filename": file.filename, **result}
 
-@app.api_route("/{path_name:path}", methods=["GET", "POST", "OPTIONS"])
-async def catch_all(request: Request, path_name: str):
-    return {
-        "error": "Not Found",
-        "requested_path": path_name,
-        "method": request.method,
-        "url": str(request.url),
-        "info": "The request reached the backend but didn't match any specific route. Check if you're using /api/ prefix or not."
-    }
+# Removed catch_all debug route for production cleanliness
